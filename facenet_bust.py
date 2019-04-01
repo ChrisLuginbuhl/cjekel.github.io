@@ -1,5 +1,16 @@
-#To run this script, must add /facenet/src to PYTHONPATH
-#e.g. > export PYTHONPATH=$PYTHONPATH:/facenet/src
+#Uses David Sandberg's Facenet implementation, using an adaptation of Charles Jekel's script for cropping
+# To run face detection:
+# Do NOT source activate tensorflow_p36impor
+# Clone https://github.com/davidsandberg/facenet
+# Run pip install -r requirements.txt (note that this changes tensor flow version)
+# Pip install align
+# Pip install gensim
+# export PYTHONPATH=$PYTHONPATH:~/facenet/src
+# Note the tilda above!
+# Clone or upload facenet_bust.py
+# Put images in subfolder /early_renaissance
+# Mkdir early_renaissance/outputs
+# Python facenet_bust.py
 
 
 #   import facenet libraires
@@ -26,7 +37,7 @@ factor = 0.709 # scale factor
 
 wExpansion = 1.25   # fraction of face bounding box width to add to width. int or float is fine
 hExpansionUp = 0    # fraction of face boudning box height to add to top
-hExpansionDown = 2
+hExpansionDown = 0.9
 
 
 #   fetch images
@@ -69,16 +80,16 @@ with tf.Graph().as_default():
         k = 0
         for (x1, y1, x2, y2, acc) in bounding_boxes:
             print(i, int(x1), int(x2), int(y1), int(y2))
-            bustX1 = int(x1 - (x2-x1) * wExpansion / 2)  # calculate larger bounding boxes for bust
-            bustX2 = int(x2 + (x2 - x1) * wExpansion / 2)
+            bustX1 = int(x1 - int((x2-x1) * wExpansion / 2))  # calculate larger bounding boxes for bust
+            bustX2 = int(x2 + int((x2 - x1) * wExpansion / 2))
             bustY1 = int(y1 - (y2 - y1) * hExpansionUp)
-            bustY2 = int(y2 + (y2 - y1) + hExpansionDown)
-            print(i, bustX1, bustY1, bustX2, bustY2)
+            bustY2 = int(y2 + (y2 - y1) * hExpansionDown)
+            print(i, bustX1, bustX2, bustY1, bustY2)
             w = bustX2 - bustX1
             h = bustY2 - bustY1
             im = Image.open(os.path.expanduser(image_dir + i))
-            new_im = Image.new("RGB", (w, h))
+            new_im = Image.new("RGB", (h, h))  # make a square image, assuming height is always the largest dimension
             box = (bustX1, bustY1, bustX2, bustY2)
-            new_im.paste(im.crop(box))
+            new_im.paste(im.crop(box), (int((h-w)/2), 0))  # 2nd parameter is where to paste in x,y - centre the image l-R
             new_im.save('early_renaissance/outputs/' + f + '_' + str(k) + '.jpg', 'JPEG', quality=70)
             k += 1
